@@ -1,10 +1,8 @@
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
-const mysql = require('mysql2');
-const dotenv = require('dotenv');
-
-dotenv.config();
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 const app = express();
 
@@ -19,29 +17,25 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Configurazione MySQL
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT || 3306,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+// Configurazione SQLite
+const dbPath = path.resolve(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Errore nella connessione al database:', err);
+    } else {
+        console.log('Connesso al database SQLite');
+    }
 });
 
 // Crea la tabella contacts se non esiste
-const createTableQuery = `
+db.run(`
     CREATE TABLE IF NOT EXISTS contacts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        phone VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-`;
-
-pool.query(createTableQuery, (err) => {
+`, (err) => {
     if (err) {
         console.error('Errore nella creazione della tabella:', err);
     } else {
@@ -96,33 +90,43 @@ app.post('/next', (req, res) => {
     res.json(nextQuestion);
 });
 
-app.post('/save-contact', async (req, res) => {
+app.post('/save-contact', (req, res) => {
     const { name, phone } = req.body;
 
     if (!name || !phone) {
         return res.status(400).json({ error: 'Nome e numero di telefono sono obbligatori.' });
     }
 
-    try {
-        const [result] = await pool.promise().query(
-            'INSERT INTO contacts (name, phone) VALUES (?, ?)',
-            [name, phone]
-        );
+    const query = 'INSERT INTO contacts (name, phone) VALUES (?, ?)';
+    db.run(query, [name, phone], function(err) {
+        if (err) {
+            console.error('Errore nel salvataggio del contatto:', err);
+            return res.status(500).json({ 
+                success: false,
+                error: 'Errore nel salvataggio del contatto' 
+            });
+        }
 
         console.log(`Contatto salvato: Nome - ${name}, Telefono - ${phone}`);
         
         res.json({ 
             success: true,
             message: 'Grazie! Ti contatteremo al più presto.',
-            contactId: result.insertId 
+            contactId: this.lastID 
         });
-    } catch (error) {
-        console.error('Errore nel salvataggio del contatto:', error);
-        res.status(500).json({ 
-            success: false,
-            error: 'Errore nel salvataggio del contatto' 
-        });
-    }
+    });
+});
+
+// Chiudi il database quando l'app viene terminata
+process.on('SIGINT', () => {
+    db.close((err) => {
+        if (err) {
+            console.error('Errore nella chiusura del database:', err);
+        } else {
+            console.log('Database chiuso');
+        }
+        process.exit(0);
+    });
 });
 
 const PORT = process.env.PORT || 3000;
