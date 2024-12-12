@@ -129,6 +129,17 @@ process.on('SIGINT', () => {
     });
 });
 
+// Endpoint per visualizzare tutti i contatti
+app.get('/contacts', (req, res) => {
+    db.all('SELECT * FROM contacts ORDER BY created_at DESC', [], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server in esecuzione sulla porta ${PORT}`);
