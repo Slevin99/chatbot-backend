@@ -1,0 +1,87 @@
+[
+    {
+        "id": 1,
+        "question": "Ciao! Come posso aiutarti oggi?",
+        "options": [
+            { "id": 1, "text": "Voglio informazioni sul prodotto", "next_question_id": 2 },
+            { "id": 2, "text": "Ho bisogno di supporto relativo al mio fondo di appartenenza", "next_question_id": 7 },
+            { "id": 3, "text": "Ho bisogno di supporto tecnico", "next_question_id": 4 }
+        ]
+    },
+    {
+        "id": 2,
+        "question": "Quale prodotto ti interessa?",
+        "options": [
+            { "id": 1, "text": "Pacchetto MySmile", "next_question_id": 3},
+            { "id": 2, "text": "Pacchetto Pet", "next_question_id": 5}
+        ]
+    },
+    {
+        "id": 3,
+        "question": "Quante volte all'anno vai dal dentista?",
+        "options": [
+            { "id": 1, "text": "Meno di 1 volta", "next_question_id": 4},
+            { "id": 2, "text": "1 volta", "next_question_id": 4},
+            { "id": 3, "text": "Più di 2 volte", "next_question_id": 4}
+        ]
+    },
+    {
+        "id": 4,
+        "question": "Quando è stata l'ultima volta che hai effettuato un'ortopanoramica?",
+        "options": [
+            { "id": 1, "text": "1 anno fa", "next_question_id": "show_form"},
+            { "id": 2, "text": "Più di 1 anno fa", "next_question_id": "show_form"},
+            { "id": 3, "text": "Non ricordo", "next_question_id": "show_form"}
+        ]
+    },
+    {
+        "id": 5,
+        "question": "Che animale domestico possiedi?",
+        "options": [
+            { "id": 1, "text": "Ho un gatto", "next_question_id": 6 },
+            { "id": 2, "text": "Ho un cane", "next_question_id": 6 }
+        ]
+    },
+    {
+        "id": 6,
+        "question": "Quanti anni ha il tuo amico peloso?",
+        "options": [
+            { "id": 1, "text": "Tra i 2 e i 5 anni", "next_question_id": "show_form" },
+            { "id": 2, "text": "Tra i 5 e i 10 anni", "next_question_id": "show_form" },
+            { "id": 3, "text": "Più di 10 anni", "next_question_id": "show_form" }
+        ]
+    },
+    {
+        "id": 7,
+        "question": "Dove si trova il tuo comune di residenza?",
+        "options": [
+            { "id": 1, "text": "Nord Italia", "next_question_id": 8 },
+            { "id": 2, "text": "Centro Italia", "next_question_id": 8 },
+            { "id": 3, "text": "Sud Italia", "next_question_id": 8 }
+        ]
+    },
+    {
+        "id": 8,
+        "question": "A quale fondo appartieni?",
+        "options": [
+            { "id": 1, "text": "Fondo EST", "next_question_id": 9 },
+            { "id": 2, "text": "Fondo VATTELAPESCA", "next_question_id": 9 }
+        ]
+    },
+    {
+        "id": 9,
+        "question": "Da quanto tempo appartieni al fondo?",
+        "options": [
+            { "id": 1, "text": "Meno di 1 anno", "next_question_id": "show_form" },
+            { "id": 2, "text": "Più di 1 anno", "next_question_id": "show_form" }
+        ]
+    },
+    {
+        "id": 10,
+        "question": "Per quale tipo di polizza hai bisogno di supporto tecnico?",
+        "options": [
+            { "id": 1, "text": "Polizze belle", "next_question_id": "show_form" },
+            { "id": 2, "text": "Polizze brutte", "next_question_id": "show_form" }
+        ]
+    }
+]
