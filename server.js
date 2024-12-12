@@ -7,16 +7,25 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
+
+// Configurazione CORS per la produzione
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
+    optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cors());
 
 // Configurazione MySQL
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'root',
-    database: process.env.DB_NAME || 'chatbot_db',
-    port: process.env.DB_PORT || 8889,  // Aggiunta questa riga
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
@@ -40,7 +49,7 @@ pool.query(createTableQuery, (err) => {
     }
 });
 
-// Carica lo schema delle domande da un file JSON con gestione degli errori
+// Carica lo schema delle domande
 const loadDialogueSchema = () => {
     try {
         const data = fs.readFileSync('dialogue_schema.json', 'utf8');
@@ -53,7 +62,6 @@ const loadDialogueSchema = () => {
 
 const dialogueSchema = loadDialogueSchema();
 
-// Endpoint per ottenere la domanda iniziale
 app.get('/start', (req, res) => {
     if (dialogueSchema.length === 0) {
         return res.status(500).json({ error: 'Dialogue schema non disponibile.' });
@@ -61,40 +69,33 @@ app.get('/start', (req, res) => {
     res.json(dialogueSchema[0]);
 });
 
-// Endpoint per ottenere la domanda successiva
 app.post('/next', (req, res) => {
     const { question_id, option_id } = req.body;
 
-    // Trova la domanda corrente
     const currentQuestion = dialogueSchema.find(q => q.id === Number(question_id));
     if (!currentQuestion) {
         return res.status(400).json({ error: 'Invalid question_id' });
     }
 
-    // Trova l'opzione selezionata
     const selectedOption = currentQuestion.options.find(opt => opt.id === Number(option_id));
     if (!selectedOption) {
         return res.status(400).json({ error: 'Invalid option_id' });
     }
 
-    // Gestisci la logica per next_question_id
     const nextQuestionId = selectedOption.next_question_id;
 
-    // Se l'azione è mostrare il form
     if (nextQuestionId === "show_form") {
         return res.json({ action: "show_form" });
     }
 
-    // Trova la prossima domanda
     const nextQuestion = dialogueSchema.find(q => q.id === Number(nextQuestionId));
     if (!nextQuestion) {
-        return res.status(500).json({ error: 'Errore interno: domanda successiva non trovata o mal configurata.' });
+        return res.status(500).json({ error: 'Errore interno: domanda successiva non trovata.' });
     }
 
     res.json(nextQuestion);
 });
 
-// Endpoint modificato per salvare i contatti nel database
 app.post('/save-contact', async (req, res) => {
     const { name, phone } = req.body;
 
@@ -108,7 +109,7 @@ app.post('/save-contact', async (req, res) => {
             [name, phone]
         );
 
-        console.log(`Contatto salvato nel database: Nome - ${name}, Telefono - ${phone}`);
+        console.log(`Contatto salvato: Nome - ${name}, Telefono - ${phone}`);
         
         res.json({ 
             success: true,
@@ -126,5 +127,5 @@ app.post('/save-contact', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server in esecuzione sulla porta ${PORT}`);
 });
