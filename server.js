@@ -1,12 +1,11 @@
 const express = require('express');
 const fs = require('fs');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const mysql = require('mysql2');
 
 const app = express();
 
-// Configurazione CORS per la produzione
+// Configurazione CORS
 const corsOptions = {
     origin: process.env.FRONTEND_URL || '*',
     methods: ['GET', 'POST'],
@@ -17,25 +16,29 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Configurazione SQLite
-const dbPath = path.resolve(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Errore nella connessione al database:', err);
-    } else {
-        console.log('Connesso al database SQLite');
-    }
+// Configurazione MySQL
+const pool = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: 'root',
+    database: 'chatbot_db',
+    port: 8889,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 // Crea la tabella contacts se non esiste
-db.run(`
+const createTableQuery = `
     CREATE TABLE IF NOT EXISTS contacts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
-`, (err) => {
+`;
+
+pool.query(createTableQuery, (err) => {
     if (err) {
         console.error('Errore nella creazione della tabella:', err);
     } else {
@@ -90,54 +93,50 @@ app.post('/next', (req, res) => {
     res.json(nextQuestion);
 });
 
-app.post('/save-contact', (req, res) => {
+app.post('/save-contact', async (req, res) => {
+    console.log('Richiesta ricevuta:', req.body); // Nuovo log
     const { name, phone } = req.body;
 
     if (!name || !phone) {
+        console.log('Dati mancanti'); // Nuovo log
         return res.status(400).json({ error: 'Nome e numero di telefono sono obbligatori.' });
     }
 
-    const query = 'INSERT INTO contacts (name, phone) VALUES (?, ?)';
-    db.run(query, [name, phone], function(err) {
-        if (err) {
-            console.error('Errore nel salvataggio del contatto:', err);
-            return res.status(500).json({ 
-                success: false,
-                error: 'Errore nel salvataggio del contatto' 
-            });
-        }
+    try {
+        console.log('Provo a salvare:', name, phone); // Nuovo log
+        const [result] = await pool.promise().query(
+            'INSERT INTO contacts (name, phone) VALUES (?, ?)',
+            [name, phone]
+        );
 
-        console.log(`Contatto salvato: Nome - ${name}, Telefono - ${phone}`);
+        console.log('Salvato con successo, ID:', result.insertId); // Nuovo log
         
         res.json({ 
             success: true,
             message: 'Grazie! Ti contatteremo al più presto.',
-            contactId: this.lastID 
+            contactId: result.insertId 
         });
-    });
-});
-
-// Chiudi il database quando l'app viene terminata
-process.on('SIGINT', () => {
-    db.close((err) => {
-        if (err) {
-            console.error('Errore nella chiusura del database:', err);
-        } else {
-            console.log('Database chiuso');
-        }
-        process.exit(0);
-    });
+    } catch (error) {
+        console.log('Errore nel salvataggio:', error); // Nuovo log
+        console.error('Errore nel salvataggio del contatto:', error);
+        res.status(500).json({ 
+            success: false,
+            error: 'Errore nel salvataggio del contatto' 
+        });
+    }
 });
 
 // Endpoint per visualizzare tutti i contatti
-app.get('/contacts', (req, res) => {
-    db.all('SELECT * FROM contacts ORDER BY created_at DESC', [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+app.get('/contacts', async (req, res) => {
+    try {
+        const [rows] = await pool.promise().query(
+            'SELECT * FROM contacts ORDER BY created_at DESC'
+        );
         res.json(rows);
-    });
+    } catch (error) {
+        console.error('Errore nel recupero dei contatti:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 const PORT = process.env.PORT || 3000;

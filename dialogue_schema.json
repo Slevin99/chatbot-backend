@@ -5,7 +5,7 @@
         "options": [
             { "id": 1, "text": "Voglio informazioni sul prodotto", "next_question_id": 2 },
             { "id": 2, "text": "Ho bisogno di supporto relativo al mio fondo di appartenenza", "next_question_id": 7 },
-            { "id": 3, "text": "Ho bisogno di supporto tecnico", "next_question_id": 4 }
+            { "id": 3, "text": "Ho bisogno di supporto tecnico", "next_question_id": 10 }
         ]
     },
     {
